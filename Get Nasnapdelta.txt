@@ -1,0 +1,22 @@
+Connect-NcController 10.65.59.210
+$snapshots = Get-NcSnapshot
+$vols= $snapshots.volume |select -Unique
+foreach ($vol in $vols)
+{
+	if($vol -ne "vol0")
+	{
+		$values=$null
+		write-host "Fetching snapshot on volume: $($vol)" -foregroundcolor Green
+		$snaps=$snapshots |?{$_.volume -eq $vol} |?{$_.name -match "hourly"}
+		for($i=0;$i -le ($snaps.count - '1');$i++)
+		{
+			
+			$delta=get-ncsnapshotDelta -vserver ($snaps[$i]).vserver -volume $vol -snapshot1 ($snaps[$i]).name -snapshot2 ($snaps[$i+1]).name
+			$values=$values+","+$delta.ConsumedSize
+				
+		}
+		
+		write "$($snaps[0].nccontroller),$vol$values" |out-file -filepath C:\temp\outmicky.csv
+		
+	}
+}
